@@ -24,7 +24,7 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --sconsole --add-data "assets;assets" main.py
+        pyinstaller --onefile --console --add-data "assets;assets" main.py
 
     - name: Upload Windows Executable
       uses: actions/upload-artifact@v4
