@@ -21,17 +21,23 @@ try:
 except (pygame.error, NotImplementedError, ModuleNotFoundError):
     AUDIO_ENABLED = False
 
+CURRENT_TRACK = None
+
 def play_audio_track(filename):
-    """Safely switches the background music track from the assets folder."""
+    global CURRENT_TRACK
     if not AUDIO_ENABLED:
+        return
+    # If this exact track is already playing, do nothing so it doesn't restart!
+    if CURRENT_TRACK == filename and pygame.mixer.music.get_busy():
         return
     try:
         path = resource_path(os.path.join("assets", filename))
         pygame.mixer.music.stop()
         pygame.mixer.music.load(path)
-        pygame.mixer.music.play(-1) # Loop indefinitely
+        pygame.mixer.music.play(-1)
+        CURRENT_TRACK = filename
     except pygame.error:
-        pass # Fails silently if the audio file is missing
+        pass
 
 def play_sfx(filename):
     """Safely plays a short sound effect from the assets folder."""
