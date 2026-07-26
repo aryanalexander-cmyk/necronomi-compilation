@@ -474,7 +474,7 @@ def run_emptied_form():
                 slow_print("Floating upon nothing, you found a lantern.", 0.05)
                 inventory.append("Rusted Lantern") 
                 play_sfx("clue_unlock.wav")
-            elif rooms_visited == 7 and "Pale Chalk" not in inventory:
+            elif rooms_visited == 5 and "Pale Chalk" not in inventory:
                 print("\n") 
                 slow_print("Clutched in the skeletal hand of something long dead, you find chalk.", 0.05)
                 inventory.append("Pale Chalk") 
