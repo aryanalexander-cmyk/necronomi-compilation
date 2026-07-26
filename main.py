@@ -14,13 +14,16 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # --- AUDIO & CONFIG UTILITIES ---
+AUDIO_ENABLED = True
 try:
     pygame.mixer.init()
-except pygame.error:
-    pass
+except (pygame.error, NotImplementedError, ModuleNotFoundError):
+    AUDIO_ENABLED = False
 
 def play_audio_track(filename):
     """Safely switches the background music track from the assets folder."""
+    if not AUDIO_ENABLED:
+        return
     try:
         path = resource_path(os.path.join("assets", filename))
         pygame.mixer.music.stop()
@@ -31,6 +34,8 @@ def play_audio_track(filename):
 
 def play_sfx(filename):
     """Safely plays a short sound effect from the assets folder."""
+    if not AUDIO_ENABLED:
+        return
     try:
         path = resource_path(os.path.join("assets", filename))
         sound = pygame.mixer.Sound(path)
@@ -47,15 +52,17 @@ COLOR_DANGER = "\033[91m"
 COLOR_VICTORY = "\033[92m"  
 
 def type_text(text, speed=0.015, color=COLOR_DEFAULT, corrupt=False): 
-    """Outputs text with typewriter effect and optional 'madness' corruption."""
-    print(color, end="") 
+    """Outputs text with typewriter effect letter-by-letter and optional 'madness' corruption."""
+    sys.stdout.write(color) 
     for char in text: 
         if corrupt and random.random() < 0.08: 
-            print(random.choice(["~", "≈", "§", "?", "∆"]), end="")
+            sys.stdout.write(random.choice(["~", "≈", "§", "?", "∆"]))
         else:
-            print(char, end="") 
+            sys.stdout.write(char) 
+        sys.stdout.flush() # Forces Python to display the character immediately
         time.sleep(speed) 
-    print(COLOR_DEFAULT) 
+    sys.stdout.write(COLOR_DEFAULT + "\n") 
+    sys.stdout.flush()
 
 def clear_screen(): 
     os.system('cls' if os.name == 'nt' else 'clear') 
@@ -85,6 +92,7 @@ def show_tutorial():
     print(COLOR_CLUE + "\n1. THE SALT TIDE (Social Deduction Horror):" + COLOR_DEFAULT)
     print("   - You have 5 cycles before the tide consumes the ziggurat.")
     print("   - Explore locations (The Slums, Archives, Foundry) to uncover clues. Uncovering clues can lead to new areas, and you may check your clues at the entrance.")
+    print("   - Each suspect (High Priest, Bronze Smith, Concubine) may be a Sea Thrall. Only one is the true Sea Thrall.")
     print("   - Acquiring clues may increase your Terror; at 100%, you keel over in madness. Meditate to reduce Terror.")
     print("   - Accuse the correct Sea Thrall at the Foundry before time runs out to win.")
     
@@ -138,10 +146,14 @@ def run_salt_tide():
             type_text("The monsoon rains are tearing at the mud-brick steps, but it's the wind that has everyone terrified. It smells like deep water and dead things. The heavy Bronze Doors lead into the Archives. Down the slick steps, The Slums are drowning in the deluge.")
             print("\n1. Speak to the High Priest") 
             print("2. Travel to The Slums") 
-            if "concept_of_the_floating_wood" in lexicon:
+            # FIXED: Unlocks if you have ANY clue in your lexicon, preventing deadlocks
+            if len(lexicon) > 0:
                 print(f"3. {COLOR_CLUE}[UNLOCK]{COLOR_DEFAULT} Open the Bronze Doors to The Archives") 
-            print("4. Meditate at the inner shrine (Calm your mind [-15% Terror, -1 Cycle])") # <--- Added option
+            else:
+                print(f"3. {COLOR_DANGER}[LOCKED]{COLOR_DEFAULT} Open the Bronze Doors to The Archives (Requires a discovered clue)")
+            print("4. Meditate at the inner shrine (Calm your mind [-15% Terror, -1 Cycle])")
             print("5. Inspect your Lexicon of Forbidden Knowledge")
+            print("6. Scrutinize the outer wall carvings (Gain an initial lead)") # Alternative early clue source
             
             choice = input("\n> ").strip() 
             play_sfx("click.wav")
@@ -158,9 +170,9 @@ def run_salt_tide():
                 days_remaining -= 1 
             elif choice == "2": 
                 current_location = "The Slums" 
-            elif choice == "3" and "concept_of_the_floating_wood" in lexicon:
+            elif choice == "3" and len(lexicon) > 0:
                 current_location = "The Archives" 
-            elif choice == "4": # <--- Added logic handler
+            elif choice == "4": 
                 if terror > 0:
                     terror = max(0, terror - 15)
                     type_text("You burn sweet-smelling cedar and press your forehead against the cool stone wall. The panic recedes slightly from your chest.", color=COLOR_VICTORY)
@@ -170,7 +182,7 @@ def run_salt_tide():
                 input("\n[Press Enter]")
                 play_sfx("click.wav")
                 days_remaining -= 1
-            elif choice == "5": # <--- Added logic handler to display lexicon
+            elif choice == "5": 
                 clear_screen()
                 type_text("--- YOUR UNLOCKED LEXICON ---", color=COLOR_SYSTEM)
                 if not lexicon:
@@ -181,13 +193,29 @@ def run_salt_tide():
                         type_text(f"{idx}. [UNLOCKED] {formatted_clue}", color=COLOR_CLUE)
                 input("\n[Press Enter to return]")
                 play_sfx("click.wav")
+            elif choice == "6":
+                if "ziggurat_foundation_lore" not in lexicon:
+                    type_text("You inspect the water-damaged brickwork. Ancient glyphs speak of a time before the bronze walls, when the city traded with outsiders across the roaring deep. A strange realization dawns on you.", color=COLOR_CLUE)
+                    lexicon.append("ziggurat_foundation_lore")
+                    save_lexicon(lexicon)
+                    terror += 25
+                    play_sfx("clue_unlock.wav")
+                else:
+                    type_text("You've already studied these carvings as closely as you can bear.")
+                    terror += 5
+                input("\n[Press Enter]")
+                play_sfx("click.wav")
+                days_remaining -= 1
         
         elif current_location == "The Slums": 
             type_text("The air here is choked with ash, poverty, and sheer panic. An old beggar sits in the muck, weeping as he scratches impossible shapes into the clay. The Foundry looms ahead, sealed off by the priests with a wall of sacred fire to keep 'the corruption' out.")
             print("\n1. Listen to the Beggar") 
             print("2. Return to Ziggurat") 
-            if "the_iron_heresy" in lexicon:
+            # FIXED: Unlocks if you have ANY clue in your lexicon
+            if len(lexicon) > 0:
                 print(f"3. {COLOR_CLUE}[UNLOCK]{COLOR_DEFAULT} Part the fire and enter The Foundry") 
+            else:
+                print(f"3. {COLOR_DANGER}[LOCKED]{COLOR_DEFAULT} Part the fire and enter The Foundry (Requires a discovered clue)")
                 
             choice = input("\n> ").strip() 
             play_sfx("click.wav")
@@ -206,7 +234,7 @@ def run_salt_tide():
                 days_remaining -= 1 
             elif choice == "2": 
                 current_location = "Ziggurat Entrance" 
-            elif choice == "3" and "the_iron_heresy" in lexicon:
+            elif choice == "3" and len(lexicon) > 0:
                 current_location = "The Foundry" 
 
         elif current_location == "The Archives": 
