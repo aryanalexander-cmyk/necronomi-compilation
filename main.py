@@ -316,7 +316,20 @@ def run_salt_tide():
                 if 0 <= accused_index < len(suspects):
                     accused = suspects[accused_index] 
                     
-                    if accused == sea_thrall:
+                    # REQUIREMENT CHECK: Do they have the proof for this specific suspect?
+                    has_proof = True
+                    if accused == "High Priest" and "ziggurat_foundation_lore" not in lexicon:
+                        has_proof = False
+                    elif accused == "Concubine" and "concept_of_the_floating_wood" not in lexicon:
+                        has_proof = False
+                    elif accused == "Bronze Smith" and "the_iron_heresy" not in lexicon:
+                        has_proof = False
+
+                    if not has_proof:
+                        type_text(f"\nYou have no solid evidence linking the {accused} to the tide. The council dismisses your baseless claim.", color=COLOR_DANGER)
+                        play_sfx("error.wav")
+                        time.sleep(2)
+                    elif accused == sea_thrall:
                         type_text("\nYOU GUESSED CORRECTLY. THE GUARDS DRAG THE THRALL TO THE ALTAR.", color=COLOR_SYSTEM)
                         play_sfx("victory.wav")
                         time.sleep(2) 
@@ -326,7 +339,7 @@ def run_salt_tide():
                         save_lexicon([]) 
                         input("\n[Press Enter to return to the Compilation Menu]")
                         play_sfx("click.wav")
-                        return # Cleanly exits back to menu
+                        return 
                     else: 
                         type_text("\nWRONG. THE CITY GATES ARE LEFT UNGUARDED. THE TIDE RUSHES IN.", color=COLOR_DANGER)
                         play_sfx("game_over.wav")
