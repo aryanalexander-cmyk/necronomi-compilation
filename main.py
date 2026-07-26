@@ -300,35 +300,33 @@ def run_salt_tide():
                     accused_input = input("> ").strip()
                     accused_index = int(accused_input) - 1 
                     play_sfx("click.wav")
-                    if 0 <= accused_index < len(suspects):
-                        accused = suspects[accused_index] 
-                        
-                        if accused == sea_thrall:
-                            type_text("\nYOU GUESSED CORRECTLY. THE GUARDS DRAG THE THRALL TO THE ALTAR.", color=COLOR_SYSTEM)
-                            play_sfx("victory.wav")
-                            time.sleep(2) 
-                            
-                            clear_screen() 
-                            type_text("THE SPY NETWORK IS BROKEN. THE ZIGGURAT PREPARES FOR WAR. YOU SURVIVED... FOR NOW.", color=COLOR_VICTORY)
-                            save_lexicon([]) 
-                            input("\n[Press Enter to return to the Compilation Menu]")
-                            play_sfx("click.wav")
-                            return  # Successfully exits the game function
-                        else: 
-                            type_text("\nWRONG. THE CITY GATES ARE LEFT UNGUARDED. THE TIDE RUSHES IN.", color=COLOR_DANGER)
-                            play_sfx("game_over.wav")
-                            time.sleep(2) 
-                            clear_screen() 
-                            type_text("THE SEA SWALLOWS THE CIVILIZATION.", color=COLOR_ABYSS, speed=0.05)
-                            input("\n[Press Enter to return to the Compilation Menu]")
-                            play_sfx("click.wav")
-                            return  # Exits the game function instead of looping forever
-                    else:
-                        type_text("Invalid suspect selection index.")
-                        play_sfx("error.wav")
-                        time.sleep(1)
                 except Exception: 
                     type_text("Invalid selection format.") 
+                    play_sfx("error.wav")
+                    time.sleep(1)
+                    continue
+
+                if 0 <= accused_index < len(suspects):
+                    accused = suspects[accused_index] 
+                    
+                    if accused == sea_thrall:
+                        type_text("\nYOU GUESSED CORRECTLY. THE GUARDS DRAG THE THRALL TO THE ALTAR.", color=COLOR_SYSTEM)
+                        play_sfx("victory.wav")
+                        time.sleep(2) 
+                        
+                        clear_screen() 
+                        type_text("THE SPY NETWORK IS BROKEN. THE ZIGGURAT PREPARES FOR WAR. YOU SURVIVED... FOR NOW.", color=COLOR_VICTORY)
+                        save_lexicon([]) 
+                        input("\n[Press Enter to return to the Compilation Menu]")
+                        play_sfx("click.wav")
+                        return # Cleanly exits back to menu
+                    else: 
+                        type_text("\nWRONG. THE CITY GATES ARE LEFT UNGUARDED. THE TIDE RUSHES IN.", color=COLOR_DANGER)
+                        play_sfx("game_over.wav")
+                        time.sleep(2) 
+                        days_remaining = 0 
+                else:
+                    type_text("Invalid suspect selection index.")
                     play_sfx("error.wav")
                     time.sleep(1)
             elif choice == "3": 
