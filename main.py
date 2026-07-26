@@ -64,12 +64,37 @@ def clear_screen():
 def load_lexicon(): 
     if os.path.exists(SAVE_FILE): 
         with open(SAVE_FILE, 'r') as f: 
-            return json.load(f) 
+            try:
+                return json.load(f) 
+            except json.JSONDecodeError:
+                return []
     return [] 
 
 def save_lexicon(lexicon): 
     with open(SAVE_FILE, 'w') as f: 
         json.dump(lexicon, f) 
+
+# --- TUTORIAL SYSTEM ---
+def show_tutorial():
+    play_audio_track("title_music.mp3")
+    clear_screen()
+    print(COLOR_SYSTEM + "=" * 70)
+    print("\n" + " " * 24 + "G A M E   T U T O R I A L\n")
+    print("=" * 70 + COLOR_DEFAULT)
+    
+    print(COLOR_CLUE + "\n1. THE SALT TIDE (Social Deduction Horror):" + COLOR_DEFAULT)
+    print("   - You have 5 cycles before the tide consumes the ziggurat.")
+    print("   - Explore locations (The Slums, Archives, Foundry) to uncover clues. Uncovering clues can lead to new areas, and you may check your clues at the entrance.")
+    print("   - Acquiring clues may increase your Terror; at 100%, you keel over in madness. Meditate to reduce Terror.")
+    print("   - Accuse the correct Sea Thrall at the Foundry before time runs out to win.")
+    
+    print(COLOR_CLUE + "\n2. THE EMPTIED FORM (Recursive Exploration):" + COLOR_DEFAULT)
+    print("   - Traverse through abstract, shifting rooms using directional choices.")
+    print("   - Find the way out.")
+    print("   - Was there ever a way out?")
+    
+    input(COLOR_CLUE + "\n[Press Enter to return to the Compilation Menu]" + COLOR_DEFAULT)
+    play_sfx("click.wav")
 
 # --- GAME 1: THE SALT TIDE ---
 def show_salt_tide_title():
@@ -115,8 +140,10 @@ def run_salt_tide():
             print("2. Travel to The Slums") 
             if "concept_of_the_floating_wood" in lexicon:
                 print(f"3. {COLOR_CLUE}[UNLOCK]{COLOR_DEFAULT} Open the Bronze Doors to The Archives") 
+            print("4. Meditate at the inner shrine (Calm your mind [-15% Terror, -1 Cycle])") # <--- Added option
+            print("5. Inspect your Lexicon of Forbidden Knowledge")
             
-            choice = input("\n> ") 
+            choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
                 if sea_thrall == "High Priest":
@@ -133,6 +160,27 @@ def run_salt_tide():
                 current_location = "The Slums" 
             elif choice == "3" and "concept_of_the_floating_wood" in lexicon:
                 current_location = "The Archives" 
+            elif choice == "4": # <--- Added logic handler
+                if terror > 0:
+                    terror = max(0, terror - 15)
+                    type_text("You burn sweet-smelling cedar and press your forehead against the cool stone wall. The panic recedes slightly from your chest.", color=COLOR_VICTORY)
+                    play_sfx("clue_unlock.wav")
+                else:
+                    type_text("Your mind is already clear of panic.")
+                input("\n[Press Enter]")
+                play_sfx("click.wav")
+                days_remaining -= 1
+            elif choice == "5": # <--- Added logic handler to display lexicon
+                clear_screen()
+                type_text("--- YOUR UNLOCKED LEXICON ---", color=COLOR_SYSTEM)
+                if not lexicon:
+                    type_text("Your mind is currently clean of forbidden revelations. No clues recorded.", color=COLOR_DEFAULT)
+                else:
+                    for idx, clue in enumerate(lexicon, 1):
+                        formatted_clue = clue.replace("_", " ").title()
+                        type_text(f"{idx}. [UNLOCKED] {formatted_clue}", color=COLOR_CLUE)
+                input("\n[Press Enter to return]")
+                play_sfx("click.wav")
         
         elif current_location == "The Slums": 
             type_text("The air here is choked with ash, poverty, and sheer panic. An old beggar sits in the muck, weeping as he scratches impossible shapes into the clay. The Foundry looms ahead, sealed off by the priests with a wall of sacred fire to keep 'the corruption' out.")
@@ -141,7 +189,7 @@ def run_salt_tide():
             if "the_iron_heresy" in lexicon:
                 print(f"3. {COLOR_CLUE}[UNLOCK]{COLOR_DEFAULT} Part the fire and enter The Foundry") 
                 
-            choice = input("\n> ") 
+            choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
                 if "concept_of_the_floating_wood" not in lexicon:
@@ -151,7 +199,7 @@ def run_salt_tide():
                     terror += 40
                     play_sfx("clue_unlock.wav")
                 else:
-                    type_text("He just rocks back and forth, muttering about the nightmare boats. You can't bear to listen to it again.")
+                    type_text("He just rocks back and forth, muttering about shadows upon the waves. You can't bear to listen to it again.")
                     terror += 10
                 input("\n[Press Enter]") 
                 play_sfx("click.wav")
@@ -167,7 +215,7 @@ def run_salt_tide():
             print("2. Read the glowing central tablet") 
             print("3. Return to Ziggurat") 
             
-            choice = input("\n> ") 
+            choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
                 if sea_thrall == "Concubine":
@@ -202,7 +250,7 @@ def run_salt_tide():
             print("2. Accuse a suspect of being a Sea Thrall")
             print("3. Return to The Slums") 
             
-            choice = input("\n> ") 
+            choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
                 if sea_thrall == "Bronze Smith":
@@ -221,28 +269,34 @@ def run_salt_tide():
                     print(f"{i+1}. {suspect}") 
                 
                 try: 
-                    accused_index = int(input("> ")) - 1 
+                    accused_input = input("> ").strip()
+                    accused_index = int(accused_input) - 1 
                     play_sfx("click.wav")
-                    accused = suspects[accused_index] 
-                    
-                    if accused == sea_thrall:
-                        type_text("\nYOU GUESSED CORRECTLY. THE GUARDS DRAG THE THRALL TO THE ALTAR.", color=COLOR_SYSTEM)
-                        play_sfx("victory.wav")
-                        time.sleep(2) 
+                    if 0 <= accused_index < len(suspects):
+                        accused = suspects[accused_index] 
                         
-                        clear_screen() 
-                        type_text("THE SPY NETWORK IS BROKEN. THE ZIGGURAT PREPARES FOR WAR. YOU SURVIVED... FOR NOW.", color=COLOR_VICTORY)
-                        save_lexicon([]) 
-                        input("\n[Press Enter to return to the Compilation Menu]")
-                        play_sfx("click.wav")
-                        return 
-                    else: 
-                        type_text("\nWRONG. THE CITY GATES ARE LEFT UNGUARDED. THE TIDE RUSHES IN.", color=COLOR_DANGER)
-                        play_sfx("game_over.wav")
-                        days_remaining = 0 
-                        time.sleep(2) 
-                except: 
-                    type_text("Invalid selection.") 
+                        if accused == sea_thrall:
+                            type_text("\nYOU GUESSED CORRECTLY. THE GUARDS DRAG THE THRALL TO THE ALTAR.", color=COLOR_SYSTEM)
+                            play_sfx("victory.wav")
+                            time.sleep(2) 
+                            
+                            clear_screen() 
+                            type_text("THE SPY NETWORK IS BROKEN. THE ZIGGURAT PREPARES FOR WAR. YOU SURVIVED... FOR NOW.", color=COLOR_VICTORY)
+                            save_lexicon([]) 
+                            input("\n[Press Enter to return to the Compilation Menu]")
+                            play_sfx("click.wav")
+                            return 
+                        else: 
+                            type_text("\nWRONG. THE CITY GATES ARE LEFT UNGUARDED. THE TIDE RUSHES IN.", color=COLOR_DANGER)
+                            play_sfx("game_over.wav")
+                            days_remaining = 0 
+                            time.sleep(2) 
+                    else:
+                        type_text("Invalid suspect selection index.")
+                        play_sfx("error.wav")
+                        time.sleep(1)
+                except Exception: 
+                    type_text("Invalid selection format.") 
                     play_sfx("error.wav")
                     time.sleep(1) 
             elif choice == "3": 
@@ -340,7 +394,7 @@ def run_emptied_form():
                 time.sleep(2) 
                 return 
             else:
-                slow_print("You mark the wall with the Pale Chalk. The geometry shudders, and a new path tears open.")
+                slow_print("You mark the wall with chalk. You regain your bearings, and a new path tears open.")
                 play_sfx("clue_unlock.wav")
                 time.sleep(1) 
         
@@ -357,27 +411,28 @@ def run_emptied_form():
                 time.sleep(2) 
                 return 
             else:
-                slow_print("You raise the Rusted Lantern. Its weak, sickly light repels the unnatural shadows.")
+                slow_print("You raise your lantern high. Its weak, sickly light uncovers a new path.")
                 play_sfx("clue_unlock.wav")
                 time.sleep(1) 
         
         else:
-            slow_print(random.choice(descriptions), 0.02) 
+            current_desc = descriptions[(rooms_visited - 1) % len(descriptions)]
+            slow_print(current_desc, 0.02) 
             
             if rooms_visited == 3 and "Rusted Lantern" not in inventory:
                 print("\n") 
-                slow_print("Floating upon nothing, you found a Rusted Lantern.", 0.05)
+                slow_print("Floating upon nothing, you found a lantern.", 0.05)
                 inventory.append("Rusted Lantern") 
                 play_sfx("clue_unlock.wav")
             elif rooms_visited == 7 and "Pale Chalk" not in inventory:
                 print("\n") 
-                slow_print("Clutched in the skeletal hand of something long dead, you find Pale Chalk.", 0.05)
+                slow_print("Clutched in the skeletal hand of something long dead, you find chalk.", 0.05)
                 inventory.append("Pale Chalk") 
                 play_sfx("clue_unlock.wav")
             elif rooms_visited == 12 and "Obsidian Sigil" not in inventory:
                 print("\n") 
-                slow_print("A pedestal holds an Obsidian Sigil. It hums with an empty frequency.", 0.05)
-                inventory.append("Obsidian Sigil") 
+                slow_print("A pedestal holds a broken pendant. It hums with an empty frequency.", 0.05)
+                inventory.append("Broken Pendant") 
                 play_sfx("clue_unlock.wav")
             
             if len(inventory) == 3:
@@ -403,8 +458,11 @@ def run_emptied_form():
         print("3. Go East") 
         print("4. Go West") 
         
-        choice = input("\n> ") 
-        play_sfx("click.wav")
+        try:
+            choice = input("\n> ").strip() 
+            play_sfx("click.wav")
+        except Exception:
+            choice = ""
         
         if random.random() < 0.15:
             clear_screen() 
@@ -424,14 +482,18 @@ def main():
         print("||              C O M P I L A T I O N               ||")
         print("||                                                  ||")
         print("======================================================")
-        print("\nSelect an artifact to launch:\n")
-        print("1. The Salt Tide (Bronze Age Social Deduction Horror)")
-        print("2. The Emptied Form (Recursive Paranoia / Empty Space)")
+        print("\nSelect a story to enter:\n")
+        print("1. The Salt Tide")
+        print("2. The Emptied Form")
         print("3. Credits")
-        print("4. Quit Compilation")
+        print("4. How to Play / Tutorial")
+        print("5. Quit Compilation")
         
-        choice = input("\n> ").strip() 
-        play_sfx("click.wav")
+        try:
+            choice = input("\n> ").strip() 
+            play_sfx("click.wav")
+        except Exception:
+            choice = ""
         
         if choice == '1':
             run_salt_tide()
@@ -440,6 +502,8 @@ def main():
         elif choice == '3':
             show_emptied_form_credits()
         elif choice == '4':
+            show_tutorial()
+        elif choice == '5':
             clear_screen() 
             print("Was there a game here?")
             time.sleep(1.5) 
