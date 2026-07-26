@@ -313,12 +313,16 @@ def run_salt_tide():
                             save_lexicon([]) 
                             input("\n[Press Enter to return to the Compilation Menu]")
                             play_sfx("click.wav")
-                            return 
+                            return  # Successfully exits the game function
                         else: 
                             type_text("\nWRONG. THE CITY GATES ARE LEFT UNGUARDED. THE TIDE RUSHES IN.", color=COLOR_DANGER)
                             play_sfx("game_over.wav")
-                            days_remaining = 0 
                             time.sleep(2) 
+                            clear_screen() 
+                            type_text("THE SEA SWALLOWS THE CIVILIZATION.", color=COLOR_ABYSS, speed=0.05)
+                            input("\n[Press Enter to return to the Compilation Menu]")
+                            play_sfx("click.wav")
+                            return  # Exits the game function instead of looping forever
                     else:
                         type_text("Invalid suspect selection index.")
                         play_sfx("error.wav")
@@ -326,7 +330,7 @@ def run_salt_tide():
                 except Exception: 
                     type_text("Invalid selection format.") 
                     play_sfx("error.wav")
-                    time.sleep(1) 
+                    time.sleep(1)
             elif choice == "3": 
                 current_location = "The Slums" 
 
