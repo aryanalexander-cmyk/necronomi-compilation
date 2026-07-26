@@ -4,6 +4,7 @@ import time
 import random
 import sys
 import pygame
+import msvcrt
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for development and PyInstaller bundles."""
@@ -63,6 +64,12 @@ def type_text(text, speed=0.015, color=COLOR_DEFAULT, corrupt=False):
         time.sleep(speed) 
     sys.stdout.write(COLOR_DEFAULT + "\n") 
     sys.stdout.flush()
+
+def clear_input_buffer():
+    """Clears any lingering keystrokes in the Windows input buffer."""
+    if os.name == 'nt':
+        while msvcrt.kbhit():
+            msvcrt.getch()
 
 def clear_screen(): 
     os.system('cls' if os.name == 'nt' else 'clear') 
@@ -154,7 +161,7 @@ def run_salt_tide():
             print("4. Meditate at the inner shrine (Calm your mind [-15% Terror, -1 Cycle])")
             print("5. Inspect your Lexicon of Forbidden Knowledge")
             print("6. Scrutinize the outer wall carvings (Gain an initial lead)") # Alternative early clue source
-            
+            clear_input_buffer()
             choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
@@ -216,7 +223,7 @@ def run_salt_tide():
                 print(f"3. {COLOR_CLUE}[UNLOCK]{COLOR_DEFAULT} Part the fire and enter The Foundry") 
             else:
                 print(f"3. {COLOR_DANGER}[LOCKED]{COLOR_DEFAULT} Part the fire and enter The Foundry (Requires a discovered clue)")
-                
+            clear_input_buffer()   
             choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
@@ -242,7 +249,7 @@ def run_salt_tide():
             print("\n1. Speak to the Concubine") 
             print("2. Read the glowing central tablet") 
             print("3. Return to Ziggurat") 
-            
+            clear_input_buffer()
             choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
@@ -277,7 +284,7 @@ def run_salt_tide():
             print("\n1. Speak to the Bronze Smith") 
             print("2. Accuse a suspect of being a Sea Thrall")
             print("3. Return to The Slums") 
-            
+            clear_input_buffer()
             choice = input("\n> ").strip() 
             play_sfx("click.wav")
             if choice == "1": 
